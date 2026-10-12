@@ -461,7 +461,7 @@
     render(personas[0].id);
   }
 
-  /* ---------- Gallery ---------- */
+  /* ---------- Reviews: 3D carousel + full grid ---------- */
   function initGallery() {
     const section = $('#gallery');
     const grid = $('#gallery-grid');
@@ -469,42 +469,25 @@
     if (!section || !grid || !gallery || !gallery.length) return;
 
     section.hidden = false;
+    const total = gallery.length;
+    const pad = (n) => String(n).padStart(2, '0');
     const count = $('#reviews-count');
-    if (count) count.textContent = `+${gallery.length}`;
-    const FIRST = window.matchMedia('(max-width: 640px)').matches ? 6 : 12;
-    grid.innerHTML = gallery
-      .map((g, i) => `<button type="button" class="g-item${i >= FIRST ? ' is-hidden' : ' reveal'}" data-index="${i}" aria-label="${esc(g.alt || 'عرض الصورة')}">
-          <img src="${esc(g.src)}" alt="${esc(g.alt || '')}"${g.w ? ` width="${g.w}" height="${g.h}"` : ''} loading="lazy">
-        </button>`)
-      .join('');
+    if (count) count.textContent = `+${total}`;
 
-    // reveal the rest in batches
-    const more = $('#gallery-more');
-    const moreBtn = $('#gallery-more-btn');
-    if (more && moreBtn && gallery.length > FIRST) {
-      more.hidden = false;
-      moreBtn.addEventListener('click', () => {
-        const hidden = $$('.g-item.is-hidden', grid);
-        hidden.slice(0, FIRST).forEach((el) => el.classList.remove('is-hidden'));
-        if (hidden.length <= FIRST) more.hidden = true;
-      });
-    }
-
+    /* lightbox (shared by carousel and grid) */
     let current = 0;
     const show = (i) => {
-      current = (i + gallery.length) % gallery.length;
+      current = (i + total) % total;
       const g = gallery[current];
       $('#lb-img').src = g.src;
       $('#lb-img').alt = g.alt || '';
-      $('#lb-cap').textContent = g.caption || g.alt || '';
+      $('#lb-cap').textContent = `${pad(current + 1)} / ${total}`;
     };
-    grid.addEventListener('click', (e) => {
-      const item = e.target.closest('.g-item');
-      if (!item) return;
-      show(Number(item.dataset.index));
+    const openLightbox = (i) => {
+      show(i);
       lb.showModal();
       document.documentElement.classList.add('modal-open');
-    });
+    };
     lb.addEventListener('close', () => document.documentElement.classList.remove('modal-open'));
     lb.addEventListener('click', (e) => {
       if (e.target === lb || e.target.closest('[data-close]')) lb.close();
@@ -516,6 +499,227 @@
       if (e.key === 'ArrowRight') show(current - 1);
       if (e.key === 'ArrowLeft') show(current + 1);
     });
+
+    initReviewCarousel(openLightbox);
+
+    /* full grid, revealed on demand */
+    const all = $('#gallery-all');
+    const allBtn = $('#gallery-all-btn');
+    const FIRST = window.matchMedia('(max-width: 640px)').matches ? 6 : 12;
+    let gridBuilt = false;
+    const buildGrid = () => {
+      grid.innerHTML = gallery
+        .map((g, i) => `<button type="button" class="g-item${i >= FIRST ? ' is-hidden' : ''}" data-index="${i}" aria-label="${esc(g.alt || 'عرض الصورة')}">
+            <img src="${esc(g.src)}" alt="${esc(g.alt || '')}"${g.w ? ` width="${g.w}" height="${g.h}"` : ''} loading="lazy">
+          </button>`)
+        .join('');
+      const more = $('#gallery-more');
+      const moreBtn = $('#gallery-more-btn');
+      if (more && moreBtn && total > FIRST) {
+        more.hidden = false;
+        moreBtn.addEventListener('click', () => {
+          const hidden = $$('.g-item.is-hidden', grid);
+          hidden.slice(0, FIRST).forEach((el) => el.classList.remove('is-hidden'));
+          if (hidden.length <= FIRST) more.hidden = true;
+        });
+      }
+      gridBuilt = true;
+    };
+    if (all && allBtn) {
+      allBtn.addEventListener('click', () => {
+        if (!gridBuilt) buildGrid();
+        const open = all.hidden;
+        all.hidden = !open;
+        allBtn.setAttribute('aria-expanded', String(open));
+        allBtn.querySelector('span').textContent = open ? 'إخفاء كل الآراء' : 'عرض كل الآراء';
+        if (open) all.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+      });
+    }
+    grid.addEventListener('click', (e) => {
+      const item = e.target.closest('.g-item');
+      if (item) openLightbox(Number(item.dataset.index));
+    });
+  }
+
+  function initReviewCarousel(openLightbox) {
+    const root = $('#rv');
+    const stage = $('#rv-stage');
+    if (!root || !stage) return;
+
+    const total = gallery.length;
+    const pad = (n) => String(n).padStart(2, '0');
+    const DELAY = 4000;
+    const mobile = window.matchMedia('(max-width: 640px)');
+    let active = 0;
+    let timer = 0;
+    let userPaused = reduceMotion;
+    let hoverPaused = false;
+    let inView = false;
+
+    stage.innerHTML = gallery
+      .map((g, i) => `
+        <button type="button" class="rv-card" data-i="${i}" tabindex="-1" aria-label="رأي عميل ${i + 1} من ${total}">
+          <span class="rv-head">
+            <span class="rv-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="rv-verified">${icon('check')} عميل حقيقي</span>
+            <span class="rv-num" dir="ltr">#${pad(i + 1)}</span>
+          </span>
+          <span class="rv-shot"><img data-src="${esc(g.src)}" alt="${esc(g.alt || '')}"></span>
+          <span class="rv-foot"><span class="rv-stars" aria-hidden="true">★★★★★</span><bdi>El Sherif Store</bdi></span>
+          <span class="rv-glare" aria-hidden="true"></span>
+        </button>`)
+      .join('');
+    const cards = $$('.rv-card', stage);
+    $('#rv-total').textContent = pad(total);
+    root.style.setProperty('--rv-delay', `${DELAY}ms`);
+
+    // shortest signed distance from the active card, wrapping around the ring
+    const offset = (i) => {
+      let d = (i - active) % total;
+      if (d > total / 2) d -= total;
+      if (d < -total / 2) d += total;
+      return d;
+    };
+
+    const layout = () => {
+      const cw = parseFloat(getComputedStyle(root).getPropertyValue('--cw')) || 330;
+      const gap = parseFloat(getComputedStyle(root).getPropertyValue('--gap')) || 0.56;
+      const visible = mobile.matches ? 2 : 3;
+      cards.forEach((card, i) => {
+        const d = offset(i);
+        const ad = Math.abs(d);
+        // RTL: the next reviews sit to the left
+        card.style.setProperty('--tx', `${-d * cw * gap}px`);
+        card.style.setProperty('--tz', `${-ad * 160}px`);
+        card.style.setProperty('--ry', `${Math.max(-50, Math.min(50, d * 32))}deg`);
+        card.style.setProperty('--s', ad ? String(1 - Math.min(ad, 3) * 0.06) : '1');
+        card.style.setProperty('--o', ad > visible ? '0' : String(1 - ad * 0.12));
+        card.style.zIndex = String(100 - ad);
+        card.classList.toggle('is-active', d === 0);
+        card.classList.toggle('is-far', ad > visible);
+        card.setAttribute('aria-hidden', String(d !== 0));
+        if (ad <= visible + 1) {
+          const img = card.querySelector('img');
+          if (img.dataset.src) { img.src = img.dataset.src; delete img.dataset.src; }
+        }
+      });
+      $('#rv-cur').textContent = pad(active + 1);
+    };
+
+    const restartProgress = () => {
+      const bar = $('#rv-bar');
+      bar.classList.remove('run');
+      void bar.offsetWidth;
+      if (!userPaused) bar.classList.add('run');
+    };
+
+    let wasRunning = false;
+    const schedule = () => {
+      clearTimeout(timer);
+      const running = !userPaused && !hoverPaused && inView && !document.hidden;
+      // resuming starts a fresh countdown, so the progress bar restarts with it
+      if (running && !wasRunning) restartProgress();
+      wasRunning = running;
+      root.classList.toggle('is-paused', !running);
+      if (running) timer = setTimeout(() => go(active + 1), DELAY);
+    };
+
+    const go = (i) => {
+      active = ((i % total) + total) % total;
+      layout();
+      restartProgress();
+      schedule();
+    };
+
+    $('#rv-next').addEventListener('click', () => go(active + 1));
+    $('#rv-prev').addEventListener('click', () => go(active - 1));
+
+    const playBtn = $('#rv-play');
+    const syncPlay = () => {
+      playBtn.setAttribute('aria-pressed', String(userPaused));
+      playBtn.setAttribute('aria-label', userPaused ? 'تشغيل العرض التلقائي' : 'إيقاف العرض التلقائي');
+      playBtn.querySelector('use').setAttribute('href', userPaused ? '#i-play' : '#i-pause');
+    };
+    playBtn.addEventListener('click', () => {
+      userPaused = !userPaused;
+      syncPlay();
+      restartProgress();
+      schedule();
+    });
+    syncPlay();
+
+    // click: side card comes forward, front card opens full size
+    let dragged = false;
+    stage.addEventListener('click', (e) => {
+      const card = e.target.closest('.rv-card');
+      if (!card || dragged) return;
+      const i = Number(card.dataset.i);
+      if (i === active) openLightbox(i);
+      else go(i);
+    });
+
+    stage.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(active + 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(active - 1); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(active); }
+    });
+
+    // swipe / drag (RTL: dragging to the right pulls the next card in)
+    let startX = null;
+    stage.addEventListener('pointerdown', (e) => { startX = e.clientX; dragged = false; });
+    stage.addEventListener('pointerup', (e) => {
+      if (startX === null) return;
+      const dx = e.clientX - startX;
+      startX = null;
+      if (Math.abs(dx) > 40) {
+        dragged = true;
+        go(active + (dx > 0 ? 1 : -1));
+        setTimeout(() => { dragged = false; }, 0);
+      }
+    });
+    stage.addEventListener('pointercancel', () => { startX = null; });
+
+    // 3D tilt + glare on the front card, following the pointer
+    if (!reduceMotion && window.matchMedia('(hover: hover)').matches) {
+      stage.addEventListener('pointermove', (e) => {
+        const card = cards[active];
+        const r = card.getBoundingClientRect();
+        const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        if (!inside) return resetTilt();
+        const px = (e.clientX - r.left) / r.width;
+        const py = (e.clientY - r.top) / r.height;
+        card.classList.add('tilting');
+        card.style.setProperty('--tilty', `${(px - 0.5) * 18}deg`);
+        card.style.setProperty('--tiltx', `${(0.5 - py) * 14}deg`);
+        card.style.setProperty('--mx', `${px * 100}%`);
+        card.style.setProperty('--my', `${py * 100}%`);
+      });
+    }
+    const resetTilt = () => {
+      cards.forEach((c) => {
+        if (!c.classList.contains('tilting')) return;
+        c.classList.remove('tilting');
+        c.style.setProperty('--tilty', '0deg');
+        c.style.setProperty('--tiltx', '0deg');
+      });
+    };
+    stage.addEventListener('pointerleave', resetTilt);
+
+    // pause while hovered/focused, off-screen or in a background tab
+    root.addEventListener('mouseenter', () => { hoverPaused = true; schedule(); });
+    root.addEventListener('mouseleave', () => { hoverPaused = false; schedule(); });
+    root.addEventListener('focusin', () => { hoverPaused = true; schedule(); });
+    root.addEventListener('focusout', (e) => { if (!root.contains(e.relatedTarget)) { hoverPaused = false; schedule(); } });
+    document.addEventListener('visibilitychange', schedule);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; schedule(); }, { threshold: 0.3 }).observe(root);
+    } else {
+      inView = true;
+    }
+    mobile.addEventListener('change', layout);
+    window.addEventListener('resize', layout);
+
+    go(0);
   }
 
   /* ---------- Founder photo fallback ---------- */
