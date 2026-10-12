@@ -109,7 +109,7 @@
     const canvas = $('#net');
     if (!canvas || !canvas.getContext) return;
     const ctx = canvas.getContext('2d');
-    const colors = ['0,240,255', '139,92,246', '255,43,214'];
+    const colors = ['0,240,255', '53,97,214', '76,201,255'];
     const LINK = 130;
     let w = 0, h = 0, pts = [], raf = 0, visible = true;
     const mouse = { x: -9999, y: -9999 };

@@ -724,7 +724,7 @@ window.ES_DATA = {
         {
           name: 'PRO 5X',
           tag: 'للاستخدام المكثف',
-          color: '#c04bff',
+          color: '#5b8cff',
           summary: 'لو شغلك مكثف ومحتاج حدود أعلى وأدوات احترافية.',
           items: [
             'جميع مميزات PLUS.',
@@ -759,7 +759,7 @@ window.ES_DATA = {
         {
           name: 'Claude Max 5X',
           tag: 'للاستخدام المكثف',
-          color: '#ff2bd6',
+          color: '#4cc9ff',
           summary: 'لو Claude أداة أساسية في شغلك.',
           items: [
             'جميع مميزات Claude Pro.',
