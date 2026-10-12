@@ -469,11 +469,26 @@
     if (!section || !grid || !gallery || !gallery.length) return;
 
     section.hidden = false;
+    const count = $('#reviews-count');
+    if (count) count.textContent = `+${gallery.length}`;
+    const FIRST = window.matchMedia('(max-width: 640px)').matches ? 6 : 12;
     grid.innerHTML = gallery
-      .map((g, i) => `<button type="button" class="g-item reveal" data-index="${i}" aria-label="${esc(g.alt || 'عرض الصورة')}">
-          <img src="${esc(g.src)}" alt="${esc(g.alt || '')}" loading="lazy">
+      .map((g, i) => `<button type="button" class="g-item${i >= FIRST ? ' is-hidden' : ' reveal'}" data-index="${i}" aria-label="${esc(g.alt || 'عرض الصورة')}">
+          <img src="${esc(g.src)}" alt="${esc(g.alt || '')}"${g.w ? ` width="${g.w}" height="${g.h}"` : ''} loading="lazy">
         </button>`)
       .join('');
+
+    // reveal the rest in batches
+    const more = $('#gallery-more');
+    const moreBtn = $('#gallery-more-btn');
+    if (more && moreBtn && gallery.length > FIRST) {
+      more.hidden = false;
+      moreBtn.addEventListener('click', () => {
+        const hidden = $$('.g-item.is-hidden', grid);
+        hidden.slice(0, FIRST).forEach((el) => el.classList.remove('is-hidden'));
+        if (hidden.length <= FIRST) more.hidden = true;
+      });
+    }
 
     let current = 0;
     const show = (i) => {

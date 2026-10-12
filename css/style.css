@@ -251,6 +251,7 @@ bdi { unicode-bidi: isolate; }
 }
 .nav-links a {
   position: relative;
+  white-space: nowrap;
   padding: 8px 12px;
   font-size: 0.95rem;
   font-weight: 600;
@@ -710,6 +711,18 @@ bdi { unicode-bidi: isolate; }
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 22px rgba(0, 240, 255, 0.5));
+}
+.founder-photo img { filter: contrast(1.05) brightness(0.95); }
+.founder-photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(200deg, rgba(0, 240, 255, 0.35), transparent 45%),
+    linear-gradient(20deg, rgba(255, 43, 214, 0.4), transparent 50%);
+  mix-blend-mode: color;
+  pointer-events: none;
 }
 .founder-photo::after {
   content: "";
@@ -1412,6 +1425,9 @@ bdi { unicode-bidi: isolate; }
   transition: transform 0.3s var(--ease), box-shadow 0.3s, border-color 0.3s;
 }
 .g-item img { width: 100%; height: auto; }
+.g-item.is-hidden { display: none; }
+.gallery-more { margin-top: 30px; text-align: center; }
+#reviews-count { color: var(--cyan); font-family: var(--font-display); }
 .g-item:hover { transform: translateY(-4px); border-color: var(--cyan); box-shadow: 0 0 26px rgba(0, 240, 255, 0.35); }
 
 /* ---------- Band ---------- */
@@ -1763,19 +1779,7 @@ bdi { unicode-bidi: isolate; }
 .lb-next { left: 20px; }
 .lightbox .modal-close { top: 20px; inset-inline-end: 20px; }
 
-/* =========================================================
-   Responsive
-   ========================================================= */
-@media (max-width: 1100px) {
-  .products { grid-template-columns: repeat(2, 1fr); }
-  .contact-grid { grid-template-columns: repeat(2, 1fr); }
-  .values { grid-template-columns: repeat(2, 1fr); }
-  .steps { grid-template-columns: repeat(3, 1fr); row-gap: 40px; }
-  .steps::before { display: none; }
-  .footer-grid { grid-template-columns: 1fr 1fr; }
-}
-
-@media (max-width: 960px) {
+@media (max-width: 1180px) {
   .nav-links {
     position: fixed;
     top: var(--nav-h);
@@ -1800,6 +1804,21 @@ bdi { unicode-bidi: isolate; }
   .nav-links a.active { background: rgba(0, 240, 255, 0.08); }
   .nav-toggle { display: grid; margin-inline-start: auto; }
   .nav-cta { display: none; }
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+@media (max-width: 1100px) {
+  .products { grid-template-columns: repeat(2, 1fr); }
+  .contact-grid { grid-template-columns: repeat(2, 1fr); }
+  .values { grid-template-columns: repeat(2, 1fr); }
+  .steps { grid-template-columns: repeat(3, 1fr); row-gap: 40px; }
+  .steps::before { display: none; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 960px) {
 
   .hero { padding-top: calc(var(--nav-h) + 30px); }
   .hero-grid { grid-template-columns: 1fr; gap: 30px; }

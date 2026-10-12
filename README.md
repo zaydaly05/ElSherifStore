@@ -30,21 +30,10 @@ assets/           favicon, founder photo, gallery images
 
 Edit offers, features, durations or phone numbers in **`js/data.js`**. You don't need to touch the layout code.
 
-## Adding the photos from the chat
+## Photos
 
-The WhatsApp export didn't include the media files (images and voice notes show as "omitted"), so two image slots are ready to fill:
-
-1. **Founder photo:** save it as `assets/founder.jpg` (portrait, about 6:7). Until it exists, the card shows neon "MS" initials.
-2. **Gallery (offers, posters, customer feedback):** put the images in `assets/gallery/` and list them in `js/data.js`:
-
-   ```js
-   gallery: [
-     { src: 'assets/gallery/offer-01.jpg', alt: 'عرض Gemini Pro' },
-     { src: 'assets/gallery/review-01.jpg', alt: 'رأي عميل' },
-   ],
-   ```
-
-   The gallery section, with a lightbox, appears automatically once the list has items.
+- **Founder photo:** `assets/founder.jpg`. If the file is missing, the card falls back to neon "MS" initials.
+- **Customer reviews:** 49 screenshots in `assets/gallery/`, listed in `js/data.js` → `gallery`. To add one, drop the image in `assets/gallery/` and add a line to that list. The wall shows 12 at a time (6 on phones) with a "show more" button and a full-screen viewer.
 
 ## Run locally
 
