@@ -509,8 +509,10 @@
     let gridBuilt = false;
     const buildGrid = () => {
       grid.innerHTML = gallery
-        .map((g, i) => `<button type="button" class="g-item${i >= FIRST ? ' is-hidden' : ''}" data-index="${i}" aria-label="${esc(g.alt || 'عرض الصورة')}">
-            <img src="${esc(g.src)}" alt="${esc(g.alt || '')}"${g.w ? ` width="${g.w}" height="${g.h}"` : ''} loading="lazy">
+        .map((g, i) => `
+          <button type="button" class="rv-tile${i >= FIRST ? ' is-hidden' : ''}" data-index="${i}" style="--k:${i % FIRST}"
+            aria-label="رأي عميل ${i + 1} من ${total} — عرض بالحجم الكامل">
+            ${reviewCardInner(g, i, total, true)}
           </button>`)
         .join('');
       const more = $('#gallery-more');
@@ -518,7 +520,7 @@
       if (more && moreBtn && total > FIRST) {
         more.hidden = false;
         moreBtn.addEventListener('click', () => {
-          const hidden = $$('.g-item.is-hidden', grid);
+          const hidden = $$('.rv-tile.is-hidden', grid);
           hidden.slice(0, FIRST).forEach((el) => el.classList.remove('is-hidden'));
           if (hidden.length <= FIRST) more.hidden = true;
         });
@@ -536,9 +538,53 @@
       });
     }
     grid.addEventListener('click', (e) => {
-      const item = e.target.closest('.g-item');
+      const item = e.target.closest('.rv-tile');
       if (item) openLightbox(Number(item.dataset.index));
     });
+
+    // 3D tilt + glare following the pointer on each card
+    if (!reduceMotion && window.matchMedia('(hover: hover)').matches) {
+      let tilted = null;
+      const reset = () => {
+        if (!tilted) return;
+        tilted.classList.remove('tilting');
+        tilted.style.setProperty('--tiltx', '0deg');
+        tilted.style.setProperty('--tilty', '0deg');
+        tilted = null;
+      };
+      grid.addEventListener('pointermove', (e) => {
+        const card = e.target.closest('.rv-tile');
+        if (card !== tilted) reset();
+        if (!card) return;
+        const r = card.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width;
+        const py = (e.clientY - r.top) / r.height;
+        tilted = card;
+        card.classList.add('tilting');
+        card.style.setProperty('--tilty', `${(px - 0.5) * 16}deg`);
+        card.style.setProperty('--tiltx', `${(0.5 - py) * 12}deg`);
+        card.style.setProperty('--mx', `${px * 100}%`);
+        card.style.setProperty('--my', `${py * 100}%`);
+      });
+      grid.addEventListener('pointerleave', reset);
+    }
+  }
+
+  // inner markup shared by carousel cards and grid cards
+  function reviewCardInner(g, i, total, eager) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const img = eager
+      ? `<img src="${esc(g.src)}" alt="${esc(g.alt || '')}" loading="lazy">`
+      : `<img data-src="${esc(g.src)}" alt="${esc(g.alt || '')}">`;
+    return `
+      <span class="rv-head">
+        <span class="rv-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="rv-verified">${icon('check')} عميل حقيقي</span>
+        <span class="rv-num" dir="ltr">#${pad(i + 1)}</span>
+      </span>
+      <span class="rv-shot">${img}</span>
+      <span class="rv-foot"><span class="rv-stars" aria-hidden="true">★★★★★</span><bdi>El Sherif Store</bdi></span>
+      <span class="rv-glare" aria-hidden="true"></span>`;
   }
 
   function initReviewCarousel(openLightbox) {
@@ -559,14 +605,7 @@
     stage.innerHTML = gallery
       .map((g, i) => `
         <button type="button" class="rv-card" data-i="${i}" tabindex="-1" aria-label="رأي عميل ${i + 1} من ${total}">
-          <span class="rv-head">
-            <span class="rv-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="rv-verified">${icon('check')} عميل حقيقي</span>
-            <span class="rv-num" dir="ltr">#${pad(i + 1)}</span>
-          </span>
-          <span class="rv-shot"><img data-src="${esc(g.src)}" alt="${esc(g.alt || '')}"></span>
-          <span class="rv-foot"><span class="rv-stars" aria-hidden="true">★★★★★</span><bdi>El Sherif Store</bdi></span>
-          <span class="rv-glare" aria-hidden="true"></span>
+          ${reviewCardInner(g, i, total, false)}
         </button>`)
       .join('');
     const cards = $$('.rv-card', stage);
