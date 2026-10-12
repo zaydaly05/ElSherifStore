@@ -33,7 +33,7 @@ Edit offers, features, durations or phone numbers in **`js/data.js`**. You don't
 ## Photos
 
 - **Founder photo:** `assets/founder.jpg`. If the file is missing, the card falls back to neon "MS" initials.
-- **Customer reviews:** 49 screenshots in `assets/gallery/`, listed in `js/data.js` → `gallery`. To add one, drop the image in `assets/gallery/` and add a line to that list. The wall shows 12 at a time (6 on phones) with a "show more" button and a full-screen viewer.
+- **Customer reviews:** 80 screenshots in `assets/gallery/`, listed in `js/data.js` → `gallery`. To add one, drop the image in `assets/gallery/` and add a line to that list. The wall shows 12 at a time (6 on phones) with a "show more" button and a full-screen viewer.
 
 ## Run locally
 
