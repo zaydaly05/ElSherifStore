@@ -34,7 +34,7 @@ Edit offers, features, durations or phone numbers in **`js/data.js`**. You don't
 ## Logo and intro
 
 - `assets/logo.webp` is the full logo, used for the intro and the footer. `assets/logo-mark.webp` is the round emblem, used in the top bar and at the centre of the hero orbit. `favicon.png` and `apple-touch-icon.png` are the browser and phone icons.
-- **Intro screen:** the logo is split into 6×6 blocks. They fly in and connect with glowing lines while the page loads, then merge into the logo before the site appears. It shows once per browser tab session (a reload skips it). There's a "تخطي" button, and Esc also skips it. To change the logo, replace `assets/logo.webp` with another square image.
+- **Intro screen:** the logo is split into 6×6 blocks. They fly in and connect with glowing lines while the page loads, then merge into the logo, which reshapes into a circle with a spinning neon ring before the site appears (about 10 seconds). It shows once per browser tab session (a reload skips it). There's a "تخطي" button, and Esc also skips it. To change the logo, replace `assets/logo.webp` with another square image.
 
 ## Photos
 

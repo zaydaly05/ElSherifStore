@@ -32,12 +32,12 @@
   const label = document.getElementById('intro-text');
 
   const t0 = performance.now();
-  const MIN_TIME = reduceMotion ? 900 : 3300; // let the assembly finish before leaving
-  const MAX_TIME = 9000; // never hold the page longer than this
+  const MAX_TIME = 15000; // never hold the page longer than this
   let pageLoaded = document.readyState === 'complete';
   let locked = 0;
   let shown = 0;
   let leaving = false;
+  let circleAt = 0; // when the logo finished turning into a circle
 
   /* ---- blocks ---- */
   const tiles = [];
@@ -88,17 +88,24 @@
     .sort((a, b) => a.k - b.k)
     .map((o) => o.t);
 
-  const FLY = reduceMotion ? 0 : 850;
-  const SPREAD = reduceMotion ? 0 : 1500;
+  const FLY = reduceMotion ? 0 : 1400;
+  const SPREAD = reduceMotion ? 0 : 3000;
+  const MERGE = reduceMotion ? 0 : 1100; // blocks close their gaps
+  const MORPH = reduceMotion ? 0 : 1500; // square → circle
+  const HOLD = reduceMotion ? 300 : 1000; // admire the finished logo
   order.forEach((t, i) => {
-    const delay = 250 + (SPREAD * i) / order.length;
+    const delay = 300 + (SPREAD * i) / order.length;
     t.el.style.transitionDelay = `${delay}ms`;
     setTimeout(() => {
       t.on = true;
       t.el.classList.add('locked');
       neighbours(t).forEach((n) => connect(t, n));
       locked++;
-      if (locked === tiles.length) setTimeout(() => intro.classList.add('assembled'), 250);
+      if (locked === tiles.length) {
+        setTimeout(() => intro.classList.add('assembled'), 300);
+        setTimeout(() => intro.classList.add('circle'), 300 + MERGE);
+        setTimeout(() => { circleAt = performance.now(); }, 300 + MERGE + MORPH);
+      }
     }, delay + FLY);
   });
 
@@ -111,15 +118,18 @@
   const tick = () => {
     if (leaving) return;
     const elapsed = performance.now() - t0;
-    const target = Math.min(100, (locked / tiles.length) * 85 + (pageLoaded ? 15 : 0));
+    const target = Math.min(100, (locked / tiles.length) * 75 + (circleAt ? 15 : 0) + (pageLoaded ? 10 : 0));
     shown += (target - shown) * 0.12;
     if (target - shown < 0.5) shown = target;
     const v = Math.round(shown);
     bar.style.width = `${v}%`;
     pct.textContent = `${v}%`;
-    label.textContent = v >= 100 ? 'SYSTEM READY' : locked < tiles.length ? 'CONNECTING BLOCKS' : 'LOADING ASSETS';
+    label.textContent = v >= 100 ? 'SYSTEM READY'
+      : locked < tiles.length ? 'CONNECTING BLOCKS'
+      : !circleAt ? 'RESHAPING' : 'LOADING ASSETS';
 
-    if ((v >= 100 && elapsed >= MIN_TIME) || elapsed >= MAX_TIME) return leave();
+    const finished = circleAt && performance.now() - circleAt >= HOLD;
+    if ((v >= 100 && finished) || elapsed >= MAX_TIME) return leave();
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -128,7 +138,7 @@
     if (leaving) return;
     leaving = true;
     intro.classList.add('assembled', 'leaving');
-    setTimeout(done, reduceMotion ? 200 : 900);
+    setTimeout(done, reduceMotion ? 200 : 1100);
   }
 
   document.getElementById('intro-skip').addEventListener('click', leave);
